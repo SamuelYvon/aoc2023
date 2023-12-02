@@ -16,3 +16,8 @@ Cargo.lock
 # Puzzle files
 *.puzzle
 *.example
+
+
+# Added by cargo
+
+/target

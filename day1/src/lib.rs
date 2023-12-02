@@ -3,16 +3,13 @@ use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
 
-mod part1 {
+pub mod part1 {
     use super::*;
 
     pub fn calibration_of_line(line: &str) -> u32 {
         let mut int_buff = String::new();
 
-        let chars: Vec<char> = line
-            .chars()
-            .filter(|x| x.is_numeric())
-            .collect();
+        let chars: Vec<char> = line.chars().filter(|x| x.is_numeric()).collect();
 
         if chars.is_empty() {
             panic!("No characters!")
@@ -52,7 +49,7 @@ mod part1 {
     }
 }
 
-mod part2 {
+pub mod part2 {
     use super::*;
     use crate::part1::calibration_of_line;
     use std::collections::HashMap;
@@ -140,8 +137,4 @@ mod part2 {
 
         println!("The total is {total}");
     }
-}
-
-fn main() {
-    part2::run(false);
 }
