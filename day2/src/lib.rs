@@ -1,8 +1,22 @@
-use std::cmp::max;
 use regex::Regex;
+use std::cmp::max;
 use std::ops::Deref;
 use std::str::FromStr;
-use utils::lines_of_file;
+use utils::{lines_of_file, Problem};
+
+pub struct Day2();
+
+impl Problem for Day2 {
+    fn get_part1(&self) -> fn(bool) -> () {
+        part1::run
+    }
+
+    fn get_part2(&self) -> fn(bool) -> () {
+        part2::run
+    }
+}
+
+pub const DAY_2: Day2 = Day2();
 
 #[derive(Debug, PartialEq)]
 struct Pick {
@@ -30,10 +44,7 @@ impl FromStr for Game {
         let be = s.find(':').expect("No beginning of rounds");
 
         // Get the game id
-        let id: String = s[..be]
-            .chars()
-            .filter(|c| c.is_numeric())
-            .collect();
+        let id: String = s[..be].chars().filter(|c| c.is_numeric()).collect();
         let id = u32::from_str(&id).unwrap_or_else(|_| panic!("Invalid id: got {s}"));
 
         let splits = s[be..].split(';');
@@ -71,9 +82,9 @@ impl FromStr for Game {
 
 impl Game {
     fn is_viable(&self, red_limit: u32, green_limit: u32, blue_limit: u32) -> bool {
-        self.picks
-            .iter()
-            .all(|pick| pick.green <= green_limit && pick.red <= red_limit && pick.blue <= blue_limit)
+        self.picks.iter().all(|pick| {
+            pick.green <= green_limit && pick.red <= red_limit && pick.blue <= blue_limit
+        })
     }
 
     fn smallest_possible(&self) -> Pick {
@@ -111,7 +122,6 @@ fn test_parse_game() {
     );
 }
 
-
 fn games(debug: bool) -> Vec<Game> {
     let file_name = match debug {
         true => "files/day2.example",
@@ -119,11 +129,13 @@ fn games(debug: bool) -> Vec<Game> {
     };
 
     let lines = lines_of_file(file_name).unwrap_or_else(|_| panic!("File not found: {file_name}"));
-    lines.into_iter().filter_map(|line| Game::from_str(&line).ok()).collect()
+    lines
+        .into_iter()
+        .filter_map(|line| Game::from_str(&line).ok())
+        .collect()
 }
 
-
-pub mod part1 {
+mod part1 {
     use super::*;
 
     pub fn run(debug: bool) {
@@ -131,7 +143,8 @@ pub mod part1 {
 
         let games = games(debug);
 
-        let valid_sum: u32 = games.iter()
+        let valid_sum: u32 = games
+            .iter()
             .filter(|game| game.is_viable(12, 13, 14))
             .map(|game| game.id)
             .sum();
@@ -140,14 +153,17 @@ pub mod part1 {
     }
 }
 
-pub mod part2 {
+mod part2 {
     use super::*;
 
     pub fn run(debug: bool) {
         println!("Day 2 part 2");
 
         let games = games(debug);
-        let sum_of_power : u32 = games.iter().map(|game| game.smallest_possible().power()).sum();
+        let sum_of_power: u32 = games
+            .iter()
+            .map(|game| game.smallest_possible().power())
+            .sum();
 
         println!("The sum of power is {sum_of_power}.");
     }

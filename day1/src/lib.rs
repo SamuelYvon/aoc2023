@@ -2,8 +2,23 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
+use utils::Problem;
 
-pub mod part1 {
+pub struct Day1();
+
+impl Problem for Day1 {
+    fn get_part1(&self) -> fn(bool) -> () {
+        part1::run
+    }
+
+    fn get_part2(&self) -> fn(bool) -> () {
+        part2::run
+    }
+}
+
+pub const DAY_1: Day1 = Day1();
+
+mod part1 {
     use super::*;
 
     pub fn calibration_of_line(line: &str) -> u32 {
@@ -49,7 +64,7 @@ pub mod part1 {
     }
 }
 
-pub mod part2 {
+mod part2 {
     use super::*;
     use crate::part1::calibration_of_line;
     use std::collections::HashMap;

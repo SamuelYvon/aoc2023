@@ -2,6 +2,11 @@ use std::fs::File;
 use std::io::{Read, Result};
 use std::path::Path;
 
+pub trait Problem {
+    fn get_part1(&self) -> fn(bool) -> ();
+    fn get_part2(&self) -> fn(bool) -> ();
+}
+
 /// Read a file line by line, clearing the empty ones.
 pub fn lines_of_file(path: &str) -> Result<Vec<String>> {
     let file = File::open(Path::new(path));
