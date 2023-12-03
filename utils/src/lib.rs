@@ -24,3 +24,9 @@ pub fn lines_of_file(path: &str) -> Result<Vec<String>> {
 
     Ok(ret)
 }
+
+/// Content of str
+pub fn str_of_file(path: &str) -> Result<String> {
+    let lines = lines_of_file(path)?;
+    Ok(lines.join("\n"))
+}

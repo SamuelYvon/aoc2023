@@ -6,6 +6,7 @@ use utils::Problem;
 pub enum Days {
     Day1,
     Day2,
+    Day3,
 }
 
 impl FromStr for Days {
@@ -15,6 +16,7 @@ impl FromStr for Days {
         match s.to_ascii_lowercase().deref() {
             "day1" => Ok(Days::Day1),
             "day2" => Ok(Days::Day2),
+            "day3" => Ok(Days::Day3),
             _ => Err(()),
         }
     }
@@ -32,6 +34,10 @@ impl Days {
             Days::Day2 => {
                 use day2::DAY_2;
                 Box::new(DAY_2)
+            }
+            Days::Day3 => {
+                use day3::DAY_3;
+                Box::new(DAY_3)
             }
         };
 
