@@ -1,8 +1,13 @@
-use std::fmt::{Debug, Formatter, Write};
+use std::cmp::{max, min};
+use std::fmt::{Debug, Display, Formatter, Write};
+use std::fs::File;
+use std::path::Path;
 use std::str::FromStr;
 use utils::{str_of_file, Problem};
 
 pub struct Day3();
+
+const SYMBOLS: &str = "()+-#*&$@=/?!%";
 
 impl Problem for Day3 {
     fn get_part1(&self) -> fn(bool) -> () {
@@ -72,7 +77,7 @@ impl<T: Default + Copy + Clone + Debug> Matrix<T> {
     }
 }
 
-impl<T: Default + Copy + Clone + Debug> Debug for Matrix<T> {
+impl<T: Default + Copy + Clone + Debug + Display> Debug for Matrix<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let (rows, cols) = self.dims;
         let mut buff = String::new();
@@ -80,7 +85,7 @@ impl<T: Default + Copy + Clone + Debug> Debug for Matrix<T> {
         f.write_char('\n')?;
         for row in 0..rows {
             for col in 0..cols {
-                buff.write_str(&format!("{:#?} ", self.get(row, col)))?;
+                buff.write_str(&format!("{0}", self.get(row, col)))?;
             }
             buff.write_char('\n')?;
         }
@@ -105,18 +110,14 @@ struct NumberPair {
 
 impl Matrix<char> {
     pub fn mask(&mut self, replacement: char, other: &Matrix<bool>) {
-        let (rows, cols) = other.dims;
-
-        for row in 0..rows {
-            for col in 0..cols {
-                if !other.get(row, col) {
-                    self.set(replacement, row, col);
-                }
+        self.vals.iter_mut().zip(&other.vals).for_each(|(mine, theirs)| {
+            if !*theirs {
+                *mine = replacement;
             }
-        }
+        });
     }
 
-    pub fn extract_pairs(&self, m: &Matrix<bool>) -> Vec<NumberPair> {
+    pub fn extract_pairs(&self, _m: &Matrix<bool>) -> Vec<NumberPair> {
         let mut copy = self.clone();
         let mut vec = vec![];
         let (rows, cols) = self.dims;
@@ -125,9 +126,8 @@ impl Matrix<char> {
             for col in 0..cols {
                 let sym = copy.get(row, col);
                 if sym == '*' {
-
-                    let mut num1 : Option<u32> = None;
-                    let mut num2 : Option<u32> = None;
+                    let mut num1: Option<u32> = None;
+                    let mut num2: Option<u32> = None;
 
                     for i in -1..=1 {
                         for j in -1..=1 {
@@ -158,14 +158,13 @@ impl Matrix<char> {
                                 e += 1;
                             }
 
-                            // TODO: erase afterwards
                             let range = row * cols + s..=row * cols + e;
                             let slice = &copy.vals[range.clone()];
 
-                            let s : String = slice.iter().collect();
+                            let s: String = slice.iter().collect();
                             let number = match u32::from_str(&s) {
                                 Ok(num) => num,
-                                Err(_) => continue
+                                Err(_) => continue,
                             };
                             copy.vals[range.clone()].iter_mut().for_each(|c| *c = '.');
 
@@ -177,15 +176,21 @@ impl Matrix<char> {
                         }
                     }
 
-                    if num1.is_some() && num2.is_some() {
-                        vec.push(
-                            NumberPair {
-                                number1: num1.unwrap(),
-                                number2: num2.unwrap()
-                            }
-                        )
-
+                    if num1.is_none() {
+                        panic!("Error: found no number around a star");
                     }
+
+                    if num2.is_none() {
+                        dbg!(row);
+                        dbg!(col);
+                        dbg!(&num1);
+                        panic!("Error: found the wrong number around a start");
+                    }
+
+                    vec.push(NumberPair {
+                        number1: num1.unwrap(),
+                        number2: num2.unwrap(),
+                    })
                 }
             }
         }
@@ -221,7 +226,7 @@ impl Matrix<char> {
 }
 
 #[derive(Copy, Clone)]
-struct NumPart {
+struct Point {
     row: usize,
     col: usize,
 }
@@ -246,7 +251,7 @@ impl Matrix<bool> {
 
                 let sym = matrix.get(row as usize, col as usize);
 
-                any_ok |= "()+-#*&$@=/?!%".contains(sym);
+                any_ok |= SYMBOLS.contains(sym);
 
                 if any_ok {
                     break;
@@ -258,25 +263,15 @@ impl Matrix<bool> {
     }
 
     pub fn or(&mut self, other: &Matrix<bool>) {
-        let (rows, cols) = self.dims;
-        for row in 0..rows {
-            for col in 0..cols {
-                let v = self.get(row, col);
-                let o = other.get(row, col);
-                self.set(v || o, row, col);
-            }
-        }
+        self.vals.iter_mut().zip(&other.vals).for_each(|(mine, theirs)| {
+            *mine = *mine || *theirs;
+        })
     }
 
-    pub fn find_gears(
-        &mut self,
-        number_matrix: &Matrix<bool>,
-        sym_matrix: &Matrix<char>,
-    ) {
+    pub fn find_gears(&mut self, number_matrix: &Matrix<bool>, sym_matrix: &Matrix<char>) {
         let (rows, cols) = self.dims;
 
-        let mut pairs: Vec<(NumPart, NumPart)> = vec![];
-        let mut temp = vec![];
+        let mut points: Vec<Point> = vec![];
 
         for row in 0..rows {
             for col in 0..cols {
@@ -287,8 +282,6 @@ impl Matrix<bool> {
                 }
 
                 // Check if two numbers next to it
-                let mut count = 0_u32;
-
                 for i in -1..=1 {
                     for j in -1..=1 {
                         let col = col as isize + i;
@@ -301,22 +294,45 @@ impl Matrix<bool> {
 
                         let row = row as usize;
                         let col = col as usize;
-                        let has_num = number_matrix.get(row, col);
 
-                        if has_num {
-                            temp.push(NumPart { row, col });
+                        let has_num = number_matrix.get(row, col);
+                        let any_neigh_pt = points
+                            .iter()
+                            .any(|p| {
+                                // To determine if there is a neighbouring point, we check
+                                // if we have one on the same row that is accessible directly
+                                // through a path without symbols (row-wise)
+
+                                if p.row != row {
+                                    return false;
+                                }
+
+                                let min_col = min(col, p.col) + 1;
+                                let max_col = max(col, p.col);
+
+                                for col in min_col..max_col {
+                                    // If it's not a symbol, it's part of a number
+                                    // we've counted already
+                                    if !sym_matrix.get(row, col).is_numeric() {
+                                        return false;
+                                    }
+                                }
+
+                                return true;
+                            });
+
+                        if has_num && !any_neigh_pt {
+                            points.push(Point { row, col })
                         }
 
-                        count += has_num as u32;
-                        if temp.len() == 2 {
-                            pairs.push((temp[0], temp[1]));
-                            temp.clear();
+                        if points.len() == 2 {
                             break;
                         }
                     }
                 }
 
-                self.set(count >= 2, row, col);
+                self.set(points.len() == 2, row, col);
+                points.clear();
             }
         }
     }
@@ -355,9 +371,7 @@ impl Matrix<bool> {
         // Sideway scan left & right to complete the number
         for row in 0..rows {
             for col in 0..cols {
-                let val = self.get(row, col);
-
-                if !val {
+                if !self.get(row, col) {
                     continue;
                 }
 
@@ -399,23 +413,18 @@ impl Matrix<bool> {
     }
 
     pub fn check_numbers(&mut self, text_matrix: &Matrix<char>) {
-        let (b_rows, b_cols) = self.dims;
-        let (c_rows, c_cols) = text_matrix.dims();
+        let (rows, cols) = self.dims;
 
-        // Make sure it fits
-        assert_eq!(b_cols, c_cols);
-        assert_eq!(b_rows, c_rows);
-
-        for row in 0..b_rows {
-            for col in 0..c_cols {
+        for row in 0..rows {
+            for col in 0..cols {
                 if text_matrix.get(row, col).is_numeric() {
                     self.set(Self::any_adjacent_ok(row, col, text_matrix), row, col)
                 }
             }
         }
 
-        for row in 0..b_rows {
-            for col in 0..b_cols {
+        for row in 0..rows {
+            for col in 0..cols {
                 let val = self.get(row, col);
 
                 // Sideway scan left & right to complete the number
@@ -424,9 +433,9 @@ impl Matrix<bool> {
                 }
 
                 let i = col;
-                for j in 0..b_rows {
+                for j in 0..rows {
                     // Check oob on the right
-                    if i + j >= b_cols {
+                    if i + j >= cols {
                         break;
                     }
 
@@ -439,7 +448,7 @@ impl Matrix<bool> {
                 }
 
                 let i = col as isize;
-                for j in 0..(b_rows as isize) {
+                for j in 0..(rows as isize) {
                     // Check oob on the right
                     if i - j < 0 {
                         break;
@@ -550,9 +559,23 @@ $..
 
 mod part2 {
     use super::*;
+    use std::io::Write;
+
+    fn dump_to_file<T: Debug + Display + Copy + Default>(m: &Matrix<T>, file: &str) {
+        let mut s = String::new();
+        {
+            use std::fmt::Write;
+            s.write_fmt(format_args!("{:#?}", &m)).unwrap();
+        }
+        s = s.replace("false", ".").replace("true", "t");
+
+        File::create(Path::new(file))
+            .unwrap()
+            .write(s.as_bytes())
+            .unwrap();
+    }
 
     pub fn solve(s: &str) -> u32 {
-        let mut sum = 0_u32;
         let mut text_matrix = Matrix::from_str(s).unwrap();
         let (rows, cols) = text_matrix.dims();
 
@@ -560,7 +583,9 @@ mod part2 {
         boolean_matrix.check_numbers(&text_matrix);
 
         let mut gear_matrix: Matrix<bool> = Matrix::new(rows, cols);
-        let number_pairs = gear_matrix.find_gears(&boolean_matrix, &text_matrix);
+        gear_matrix.find_gears(&boolean_matrix, &text_matrix);
+
+        dump_to_file(&gear_matrix, "temp/gear_matrix.txt");
 
         println!("Found {0} gears.", gear_matrix.sum());
 
@@ -570,14 +595,18 @@ mod part2 {
         boolean_matrix.or(&gear_matrix);
         text_matrix.mask('.', &boolean_matrix);
 
-        dbg!(&boolean_matrix);
-        dbg!(&text_matrix);
+        dump_to_file(&text_matrix, "temp/text_matrix.txt");
 
         let pairs = text_matrix.extract_pairs(&boolean_matrix);
 
-        sum = pairs.iter().map(|pair| pair.number1 * pair.number2).sum();
+        pairs.iter().for_each(|pair| {
+            let number1 = pair.number1;
+            let number2 = pair.number2;
 
-        sum
+            println!("Gear: {number1}*{number2}");
+        });
+
+        pairs.iter().map(|pair| pair.number1 * pair.number2).sum()
     }
 
     pub fn run(debug: bool) {
