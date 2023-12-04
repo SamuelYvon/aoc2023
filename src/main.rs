@@ -7,6 +7,7 @@ pub enum Days {
     Day1,
     Day2,
     Day3,
+    Day4,
 }
 
 impl FromStr for Days {
@@ -17,6 +18,7 @@ impl FromStr for Days {
             "day1" => Ok(Days::Day1),
             "day2" => Ok(Days::Day2),
             "day3" => Ok(Days::Day3),
+            "day4" => Ok(Days::Day4),
             _ => Err(()),
         }
     }
@@ -38,6 +40,10 @@ impl Days {
             Days::Day3 => {
                 use day3::DAY_3;
                 Box::new(DAY_3)
+            }
+            Days::Day4 => {
+                use day4::DAY_4;
+                Box::new(DAY_4)
             }
         };
 

@@ -110,11 +110,14 @@ struct NumberPair {
 
 impl Matrix<char> {
     pub fn mask(&mut self, replacement: char, other: &Matrix<bool>) {
-        self.vals.iter_mut().zip(&other.vals).for_each(|(mine, theirs)| {
-            if !*theirs {
-                *mine = replacement;
-            }
-        });
+        self.vals
+            .iter_mut()
+            .zip(&other.vals)
+            .for_each(|(mine, theirs)| {
+                if !*theirs {
+                    *mine = replacement;
+                }
+            });
     }
 
     pub fn extract_pairs(&self, _m: &Matrix<bool>) -> Vec<NumberPair> {
@@ -263,9 +266,12 @@ impl Matrix<bool> {
     }
 
     pub fn or(&mut self, other: &Matrix<bool>) {
-        self.vals.iter_mut().zip(&other.vals).for_each(|(mine, theirs)| {
-            *mine = *mine || *theirs;
-        })
+        self.vals
+            .iter_mut()
+            .zip(&other.vals)
+            .for_each(|(mine, theirs)| {
+                *mine = *mine || *theirs;
+            })
     }
 
     pub fn find_gears(&mut self, number_matrix: &Matrix<bool>, sym_matrix: &Matrix<char>) {
@@ -296,30 +302,28 @@ impl Matrix<bool> {
                         let col = col as usize;
 
                         let has_num = number_matrix.get(row, col);
-                        let any_neigh_pt = points
-                            .iter()
-                            .any(|p| {
-                                // To determine if there is a neighbouring point, we check
-                                // if we have one on the same row that is accessible directly
-                                // through a path without symbols (row-wise)
+                        let any_neigh_pt = points.iter().any(|p| {
+                            // To determine if there is a neighbouring point, we check
+                            // if we have one on the same row that is accessible directly
+                            // through a path without symbols (row-wise)
 
-                                if p.row != row {
+                            if p.row != row {
+                                return false;
+                            }
+
+                            let min_col = min(col, p.col) + 1;
+                            let max_col = max(col, p.col);
+
+                            for col in min_col..max_col {
+                                // If it's not a symbol, it's part of a number
+                                // we've counted already
+                                if !sym_matrix.get(row, col).is_numeric() {
                                     return false;
                                 }
+                            }
 
-                                let min_col = min(col, p.col) + 1;
-                                let max_col = max(col, p.col);
-
-                                for col in min_col..max_col {
-                                    // If it's not a symbol, it's part of a number
-                                    // we've counted already
-                                    if !sym_matrix.get(row, col).is_numeric() {
-                                        return false;
-                                    }
-                                }
-
-                                return true;
-                            });
+                            return true;
+                        });
 
                         if has_num && !any_neigh_pt {
                             points.push(Point { row, col })
