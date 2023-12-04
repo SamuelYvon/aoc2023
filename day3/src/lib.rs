@@ -98,11 +98,9 @@ impl<T: Clone + Copy + Default + Debug> Clone for Matrix<T> {
     }
 }
 
-struct LocalizedNum {
-    number: u32,
-    row: usize,
-    col_start: usize,
-    col_end: usize,
+struct NumberPair {
+    number1: u32,
+    number2: u32,
 }
 
 impl Matrix<char> {
@@ -116,6 +114,83 @@ impl Matrix<char> {
                 }
             }
         }
+    }
+
+    pub fn extract_pairs(&self, m: &Matrix<bool>) -> Vec<NumberPair> {
+        let mut copy = self.clone();
+        let mut vec = vec![];
+        let (rows, cols) = self.dims;
+
+        for row in 0..rows {
+            for col in 0..cols {
+                let sym = copy.get(row, col);
+                if sym == '*' {
+
+                    let mut num1 : Option<u32> = None;
+                    let mut num2 : Option<u32> = None;
+
+                    for i in -1..=1 {
+                        for j in -1..=1 {
+                            if i == 0 && j == 0 {
+                                continue;
+                            }
+
+                            let row = row as isize + i;
+                            let col = col as isize + j;
+
+                            if row < 0 || row as usize > rows || col < 0 || col as usize > rows {
+                                continue;
+                            }
+
+                            let row = row as usize;
+                            let col = col as usize;
+
+                            let mut s = col;
+                            let mut e = col;
+
+                            // Go backwards
+                            while s != 0 && copy.get(row, s - 1).is_numeric() {
+                                s -= 1;
+                            }
+
+                            // Go forward
+                            while e < cols && copy.get(row, e + 1).is_numeric() {
+                                e += 1;
+                            }
+
+                            // TODO: erase afterwards
+                            let range = row * cols + s..=row * cols + e;
+                            let slice = &copy.vals[range.clone()];
+
+                            let s : String = slice.iter().collect();
+                            let number = match u32::from_str(&s) {
+                                Ok(num) => num,
+                                Err(_) => continue
+                            };
+                            copy.vals[range.clone()].iter_mut().for_each(|c| *c = '.');
+
+                            if num1.is_none() {
+                                num1 = Some(number);
+                            } else {
+                                num2 = Some(number);
+                            }
+                        }
+                    }
+
+                    if num1.is_some() && num2.is_some() {
+                        vec.push(
+                            NumberPair {
+                                number1: num1.unwrap(),
+                                number2: num2.unwrap()
+                            }
+                        )
+
+                    }
+                }
+            }
+        }
+
+        vec
     }
 
     pub fn extract_numbers(&self) -> Vec<u32> {
@@ -137,52 +212,6 @@ impl Matrix<char> {
 
             if buff.len() > 0 {
                 vec.push(u32::from_str(&buff).unwrap());
-                buff.clear();
-            }
-        }
-
-        vec
-    }
-
-    pub fn extract_numbers_with_coordinates(&self) -> Vec<Option<LocalizedNum>> {
-        let mut vec = vec![];
-
-        let (rows, cols) = self.dims;
-
-        let mut buff = String::new();
-        let mut col_start = 0;
-
-        for row in 0..rows {
-            for col in 0..cols {
-                let c = self.get(row, col);
-                if c.is_numeric() {
-                    col_start = col;
-                    buff.push(c);
-                } else if buff.len() > 0 {
-                    let number = u32::from_str(&buff).unwrap();
-
-                    vec.push(Some(LocalizedNum {
-                        number,
-                        row,
-                        col_start,
-                        col_end: col,
-                    }));
-
-                    col_start = 0;
-                    buff.clear();
-                }
-            }
-
-            if buff.len() > 0 {
-                let number = u32::from_str(&buff).unwrap();
-                vec.push(Some(LocalizedNum {
-                    number,
-                    row,
-                    col_start,
-                    col_end: cols - 1,
-                }));
-
-                col_start = 0;
                 buff.clear();
             }
         }
@@ -228,27 +257,22 @@ impl Matrix<bool> {
         any_ok
     }
 
-    pub fn or(&mut self, other : &Matrix<bool>) {
+    pub fn or(&mut self, other: &Matrix<bool>) {
         let (rows, cols) = self.dims;
         for row in 0..rows {
             for col in 0..cols {
                 let v = self.get(row, col);
-                let o  =other.get(row, col);
+                let o = other.get(row, col);
                 self.set(v || o, row, col);
             }
-
         }
-    }
-
-    pub fn clear(&mut self) {
-        self.vals.iter_mut().for_each(|v| *v = false)
     }
 
     pub fn find_gears(
         &mut self,
         number_matrix: &Matrix<bool>,
         sym_matrix: &Matrix<char>,
-    ) -> Vec<(NumPart, NumPart)> {
+    ) {
         let (rows, cols) = self.dims;
 
         let mut pairs: Vec<(NumPart, NumPart)> = vec![];
@@ -295,8 +319,6 @@ impl Matrix<bool> {
                 self.set(count >= 2, row, col);
             }
         }
-
-        pairs
     }
 
     pub fn keep_gear_adjacent(&mut self, gear_matrix: &Matrix<bool>) {
@@ -543,69 +565,17 @@ mod part2 {
         println!("Found {0} gears.", gear_matrix.sum());
 
         boolean_matrix.keep_gear_adjacent(&gear_matrix);
-        dbg!(&boolean_matrix);
 
         // Remove the non-number stuff
         boolean_matrix.or(&gear_matrix);
         text_matrix.mask('.', &boolean_matrix);
-        dbg!(text_matrix);
-        // dbg!(&text_matrix);
-        //
-        //
-        // let mut numbers = text_matrix.extract_numbers_with_coordinates();
-        //
-        // assert_eq!(0, numbers.len() % 2);
-        //
-        // let n = numbers.len();
-        //
-        // for pair in number_pairs {
-        //     let (first, second) = pair;
-        //
-        //     let mut first_idx: Option<usize> = None;
-        //     let mut second_idx: Option<usize> = None;
-        //
-        //     for i in 0..n {
-        //         let current = match numbers[i].as_ref() {
-        //             None => continue,
-        //             Some(current) => current,
-        //         };
-        //
-        //         if current.row == first.row && current.col_start >= first.col && first.col <= current.col_end
-        //         {
-        //             first_idx = Some(i);
-        //         }
-        //
-        //         if current.row == second.row && current.col_start >= second.col && second.col <= current.col_end
-        //         {
-        //             second_idx = Some(i);
-        //         }
-        //     }
-        //
-        //     if first_idx.is_none() || second_idx.is_none() {
-        //         continue;
-        //     }
-        //
-        //     let first = match numbers[first_idx.unwrap()].take() {
-        //         None => continue,
-        //         Some(e) => e
-        //     };
-        //     let second = match numbers[second_idx.unwrap()].take() {
-        //         None => continue,
-        //         Some(e) => e
-        //     };
-        //
-        //     println!(
-        //         "{0}*{1} at ({2},{3}) and ({4}, {5})",
-        //         first.number,
-        //         second.number,
-        //         first.row,
-        //         first.col_start,
-        //         second.row,
-        //         second.col_start
-        //     );
-        //
-        //     sum += first.number * second.number;
-        // }
+
+        dbg!(&boolean_matrix);
+        dbg!(&text_matrix);
+
+        let pairs = text_matrix.extract_pairs(&boolean_matrix);
+
+        sum = pairs.iter().map(|pair| pair.number1 * pair.number2).sum();
 
         sum
     }
