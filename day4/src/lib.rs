@@ -1,9 +1,9 @@
 use regex::{Match, Regex};
-use utils::lines_of_file;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Write};
 use std::str::FromStr;
 use std::usize;
+use utils::lines_of_file;
 use utils::Problem;
 
 pub struct Day4();
@@ -88,8 +88,10 @@ impl FromStr for Card {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut regex =
-            Regex::new(r"(?m)Card *(?P<number>\d*): (?P<winning>( *\d* *)*) | *(?P<gotten>(\d* *)*)").unwrap();
+        let mut regex = Regex::new(
+            r"(?m)Card *(?P<number>\d*): (?P<winning>( *\d* *)*) | *(?P<gotten>(\d* *)*)",
+        )
+        .unwrap();
         let captures = regex.captures_iter(s);
 
         let mut number: usize = 0;
@@ -118,10 +120,9 @@ impl FromStr for Card {
     }
 }
 
-
 mod part2 {
-    use utils::lines_of_file;
     use super::*;
+    use utils::lines_of_file;
 
     fn solve(file: &str) -> u32 {
         let lines = lines_of_file(file).unwrap();

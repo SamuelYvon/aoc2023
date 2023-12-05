@@ -27,6 +27,8 @@ pub fn lines_of_file(path: &str) -> Result<Vec<String>> {
 
 /// Content of str
 pub fn str_of_file(path: &str) -> Result<String> {
-    let lines = lines_of_file(path)?;
-    Ok(lines.join("\n"))
+    let file = File::open(Path::new(path));
+    let mut buff = String::new();
+    file?.read_to_string(&mut buff)?;
+    Ok(buff)
 }
