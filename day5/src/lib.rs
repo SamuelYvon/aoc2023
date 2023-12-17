@@ -84,11 +84,7 @@ fn parse_range(line: &str) -> LargeRange {
     let src = range_desc[1];
     let len = range_desc[2];
 
-    LargeRange {
-        src,
-        dest,
-        len,
-    }
+    LargeRange { src, dest, len }
 }
 
 #[cfg(test)]
@@ -204,52 +200,80 @@ impl FromStr for Almanac {
         let mut i = 0;
         // Read seeds
         let line = &lines[i];
-        let seeds_in_str: String = line.chars().into_iter().filter(|c| c.is_numeric() || *c == ' ').collect();
-        seeds_in_str.split(" ").filter(|s| s.trim().len() > 0).for_each(|seed_as_str| {
-            almanac.seeds.push(u32::from_str(seed_as_str).unwrap());
-        });
+        let seeds_in_str: String = line
+            .chars()
+            .into_iter()
+            .filter(|c| c.is_numeric() || *c == ' ')
+            .collect();
+        seeds_in_str
+            .split(" ")
+            .filter(|s| s.trim().len() > 0)
+            .for_each(|seed_as_str| {
+                almanac.seeds.push(u32::from_str(seed_as_str).unwrap());
+            });
         i += 1;
 
         skip_to_first_non_empty(&lines, &mut i);
         assert_eq!(lines[i], "seed-to-soil map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.seed_to_soil, ranges);
         i += 1;
 
         assert_eq!(lines[i], "soil-to-fertilizer map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.soil_to_fertilizer, ranges);
         i += 1;
 
         assert_eq!(lines[i], "fertilizer-to-water map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.fertilizer_to_water, ranges);
         i += 1;
 
         assert_eq!(lines[i], "water-to-light map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.water_to_light, ranges);
         i += 1;
 
         assert_eq!(lines[i], "light-to-temperature map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.light_to_temperature, ranges);
         i += 1;
 
         assert_eq!(lines[i], "temperature-to-humidity map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.temperature_to_humidity, ranges);
         i += 1;
 
         assert_eq!(lines[i], "humidity-to-location map:");
         i += 1;
-        let ranges = collect_non_empty(&lines, &mut i).into_iter().map(|sl| parse_range(&sl)).collect::<Vec<_>>();
+        let ranges = collect_non_empty(&lines, &mut i)
+            .into_iter()
+            .map(|sl| parse_range(&sl))
+            .collect::<Vec<_>>();
         push_all_into(&mut almanac.humidity_to_location, ranges);
 
         Ok(almanac)
@@ -257,9 +281,9 @@ impl FromStr for Almanac {
 }
 
 mod part2 {
+    use crate::{filename, Almanac};
     use std::str::FromStr;
     use utils::str_of_file;
-    use crate::{Almanac, filename};
 
     fn run(filename: &str) -> u32 {
         let almanac_as_str = str_of_file(filename).expect("Failed to open the file.");
@@ -273,7 +297,7 @@ mod part2 {
             let start = almanac.seeds[pair_idx * 2];
             let len = almanac.seeds[1 + pair_idx * 2];
 
-            for seed in start..(start+len) {
+            for seed in start..(start + len) {
                 let loc = almanac.destination_of_seed(seed);
                 if loc < lowest {
                     lowest = loc
@@ -291,9 +315,9 @@ mod part2 {
 }
 
 mod part1 {
+    use crate::{filename, Almanac};
     use std::str::FromStr;
     use utils::str_of_file;
-    use crate::{Almanac, filename};
 
     fn run(filename: &str) -> u32 {
         let almanac_as_str = str_of_file(filename).expect("Failed to open the file.");

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = ["day1", "day2", "day3", "day4", "day5", "utils"]
+members = ["day1", "day2", "day3", "day4", "day5", "day6", "utils"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,4 +14,5 @@ day2 = { path = "./day2" }
 day3 = { path = "./day3" }
 day4 = { path = "./day4" }
 day5 = { path = "./day5" }
+day6 = { path = "./day6" }
 utils = { path = "./utils" }

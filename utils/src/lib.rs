@@ -32,3 +32,10 @@ pub fn str_of_file(path: &str) -> Result<String> {
     file?.read_to_string(&mut buff)?;
     Ok(buff)
 }
+
+pub fn filename(day: u32, debug: bool) -> String {
+    match debug {
+        false => format!("files/day{day}.puzzle"),
+        true => format!("files/day{day}.example"),
+    }
+}
